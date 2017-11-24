@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/lovego/xiaomei/utils/httputil"
+	"github.com/lovego/httputil"
 	"github.com/nu7hatch/gouuid"
 )
 
