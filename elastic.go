@@ -1,7 +1,6 @@
 package elastic
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -31,17 +30,15 @@ func New2(client *httputil.Client, addrs ...string) *ES {
 	return &ES{BaseAddrs: addrs, client: client}
 }
 
-var NotFoundErr = errors.New(`404 not found.`)
-
 func (es *ES) Get(path string, bodyData, data interface{}) error {
 	resp, err := es.client.Get(es.Uri(path), nil, bodyData)
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		return NotFoundErr
-	}
 	if err := resp.Ok(); err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return Error{typ: ErrorNotFound, message: err.Error()}
+		}
 		return err
 	}
 	return resp.Json(data)
@@ -60,10 +57,10 @@ func (es *ES) RootGet(path string, bodyData, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	if resp.StatusCode == http.StatusNotFound {
-		return NotFoundErr
-	}
 	if err := resp.Ok(); err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return Error{typ: ErrorNotFound, message: err.Error()}
+		}
 		return err
 	}
 	return resp.Json(data)

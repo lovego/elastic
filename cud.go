@@ -12,6 +12,11 @@ func (es *ES) Put(path string, bodyData, data interface{}) error {
 		return err
 	}
 	if err := resp.Check(http.StatusOK, http.StatusCreated); err != nil {
+		var errData struct{ Error struct{ Type string } }
+		if resp.StatusCode == http.StatusBadRequest && resp.Json(&errData) == nil &&
+			errData.Error.Type == `index_already_exists_exception` {
+			return Error{typ: ErrorIndexAreadyExists, message: err.Error()}
+		}
 		return err
 	}
 	return resp.Json(data)
