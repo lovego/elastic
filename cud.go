@@ -7,14 +7,15 @@ import (
 
 // 覆盖
 func (es *ES) Put(path string, bodyData, data interface{}) error {
-	resp, err := es.client.Put(es.Uri(path), nil, bodyData)
+	resp, err := es.client.Put(es.Uri(path), contentTypeHeader, bodyData)
 	if err != nil {
 		return err
 	}
 	if err := resp.Check(http.StatusOK, http.StatusCreated); err != nil {
 		var errData struct{ Error struct{ Type string } }
 		if resp.StatusCode == http.StatusBadRequest && resp.Json(&errData) == nil &&
-			errData.Error.Type == `index_already_exists_exception` {
+			(errData.Error.Type == `index_already_exists_exception` ||
+				errData.Error.Type == `resource_already_exists_exception`) {
 			return Error{typ: ErrorIndexAreadyExists, message: err.Error()}
 		}
 		return err
@@ -29,7 +30,7 @@ func (es *ES) Create(path string, bodyData, data interface{}) error {
 		return err
 	}
 	uri.Path += `/_create`
-	resp, err := es.client.Put(uri.String(), nil, bodyData)
+	resp, err := es.client.Put(uri.String(), contentTypeHeader, bodyData)
 	if err != nil {
 		return err
 	}
@@ -51,7 +52,7 @@ func (es *ES) Update(path string, bodyData, data interface{}) error {
 		return err
 	}
 	uri.Path += `/_update`
-	return es.client.PostJson(uri.String(), nil, bodyData, data)
+	return es.client.PostJson(uri.String(), contentTypeHeader, bodyData, data)
 }
 
 // Create if not Exist
@@ -68,9 +69,6 @@ func (es *ES) Exist(path string) (bool, error) {
 	resp, err := es.client.Head(es.Uri(path), nil, nil)
 	if err != nil {
 		return false, err
-	}
-	if resp != nil {
-		defer resp.Body.Close()
 	}
 
 	switch resp.StatusCode {

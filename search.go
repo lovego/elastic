@@ -26,7 +26,7 @@ func (es *ES) Search(path string, bodyData interface{}) (*SearchResult, error) {
 	}
 	uri.Path += `/_search`
 	result := &SearchResult{}
-	if err := es.client.PostJson(uri.String(), nil, bodyData, result); err != nil {
+	if err := es.client.PostJson(uri.String(), contentTypeHeader, bodyData, result); err != nil {
 		return nil, err
 	}
 	return result, nil

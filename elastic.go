@@ -16,6 +16,8 @@ type ES struct {
 	client    *httputil.Client
 }
 
+var contentTypeHeader = map[string]string{"Content-Type": "application/json"}
+
 func New(addrs ...string) *ES {
 	if len(addrs) == 0 {
 		log.Panic(`empty elastic addrs`)
@@ -31,7 +33,7 @@ func New2(client *httputil.Client, addrs ...string) *ES {
 }
 
 func (es *ES) Get(path string, bodyData, data interface{}) error {
-	resp, err := es.client.Get(es.Uri(path), nil, bodyData)
+	resp, err := es.client.Get(es.Uri(path), contentTypeHeader, bodyData)
 	if err != nil {
 		return err
 	}
@@ -45,7 +47,7 @@ func (es *ES) Get(path string, bodyData, data interface{}) error {
 }
 
 func (es *ES) Post(path string, bodyData, data interface{}) error {
-	return es.client.PostJson(es.Uri(path), nil, bodyData, data)
+	return es.client.PostJson(es.Uri(path), contentTypeHeader, bodyData, data)
 }
 
 func (es *ES) RootGet(path string, bodyData, data interface{}) error {
@@ -53,7 +55,7 @@ func (es *ES) RootGet(path string, bodyData, data interface{}) error {
 	if err != nil {
 		return err
 	}
-	resp, err := es.client.Get(uri, nil, bodyData)
+	resp, err := es.client.Get(uri, contentTypeHeader, bodyData)
 	if err != nil {
 		return err
 	}
@@ -70,7 +72,7 @@ func (es *ES) RootPost(path string, bodyData, data interface{}) error {
 	if uri, err := es.RootUri(path); err != nil {
 		return err
 	} else {
-		return es.client.PostJson(uri, nil, bodyData, data)
+		return es.client.PostJson(uri, contentTypeHeader, bodyData, data)
 	}
 }
 

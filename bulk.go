@@ -48,7 +48,7 @@ func (es *ES) BulkDo(path string, body, typ string, data [][2]interface{}) error
 	uri.Path += `/_bulk`
 
 	result := BulkResult{}
-	if err := es.client.PostJson(uri.String(), nil, body, &result); err != nil {
+	if err := es.client.PostJson(uri.String(), contentTypeHeader, body, &result); err != nil {
 		return err
 	}
 	if !result.Errors {
@@ -73,7 +73,7 @@ func (es *ES) BulkDelete(path string, data []string) error {
 	}
 
 	result := BulkResult{}
-	if err := es.client.PostJson(uri.String(), nil, body, &result); err != nil {
+	if err := es.client.PostJson(uri.String(), contentTypeHeader, body, &result); err != nil {
 		return err
 	}
 	if !result.Errors {
