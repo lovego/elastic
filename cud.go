@@ -42,7 +42,17 @@ func (es *ES) Create(path string, bodyData, data interface{}) error {
 
 // 删除
 func (es *ES) Delete(path string, data interface{}) error {
-	return es.client.DeleteJson(es.Uri(path), nil, nil, data)
+	resp, err := es.client.Delete(es.Uri(path), nil, nil)
+	if err != nil {
+		return err
+	}
+	if err := resp.Ok(); err != nil {
+		if resp.StatusCode == http.StatusNotFound {
+			return Error{typ: ErrorNotFound, message: err.Error()}
+		}
+		return err
+	}
+	return resp.Json(data)
 }
 
 // 更新
