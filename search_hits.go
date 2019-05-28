@@ -7,8 +7,11 @@ import (
 )
 
 type SearchHits struct {
-	Total int         `json:"total"`
-	Hits  []SearchHit `json:"hits"`
+	Total struct {
+		Value    int    `json:"value"`
+		Relation string `json:"relation"`
+	} `json:"total"`
+	Hits []SearchHit `json:"hits"`
 }
 
 type SearchHit struct {

@@ -1,50 +1,50 @@
 package elastic
 
 import (
-	"encoding/json"
-	"reflect"
-	"testing"
+	"fmt"
+	"log"
+	"os"
 )
 
-var testES = New(`http://localhost:9200/test-index`)
+var testES = New(testEsHost() + `/test-index`)
+
+func testEsHost() string {
+	if esHost := os.Getenv(`EsHost`); esHost != `` {
+		return esHost
+	}
+	return `http://localhost:9200`
+}
 
 func createEmptyUsers() {
-	testES.Delete(`/`, nil)
+	if err := testES.Delete(`/`, nil); err != nil {
+		log.Panic(err)
+	}
 
-	testES.Ensure(`/`, nil)
-	testES.Ensure(`/_mapping/_doc`, map[string]interface{}{
+	if err := testES.Ensure(`/`, nil); err != nil {
+		log.Panic(err)
+	}
+	if err := testES.Put(`/_mapping`, map[string]interface{}{
 		"properties": map[string]interface{}{
 			"name": map[string]string{"type": "keyword"},
 			"age":  map[string]string{"type": "integer"},
 		},
-	})
+	}, nil); err != nil {
+		log.Panic(err)
+	}
 }
 
-func checkLiLeiAndHanMeiMei(t *testing.T) {
-	testES.Get(`/_refresh`, nil, nil)
+func printData() {
+	if err := testES.Get(`/_refresh`, nil, nil); err != nil {
+		log.Panic(err)
+	}
 
 	result, err := testES.Search(`/_doc`, map[string]map[string]string{`sort`: {`age`: `desc`}})
 	if err != nil {
-		t.Fatal(err)
+		log.Panic(err)
 	}
-
-	expectTotal := 2
-	if result.Hits.Total != expectTotal {
-		t.Errorf("expect total: %d, got: %d\n", expectTotal, result.Hits.Total)
-	}
-
-	expectDocs := []map[string]interface{}{
-		{`name`: `lilei`, `age`: json.Number(`31`)},
-		{`name`: `hanmeimei`, `age`: json.Number(`29`)},
-	}
-	var docs []map[string]interface{}
-	if err := result.Hits.Sources(&docs); err != nil {
-		t.Fatal(err)
-	}
-	if !reflect.DeepEqual(docs, expectDocs) {
-		t.Errorf(`
-expect docs: %v
-        got: %v
-`, expectDocs, docs)
+	hits := result.Hits
+	fmt.Println(hits.Total)
+	for _, row := range hits.Hits {
+		fmt.Println(string(row.Source))
 	}
 }
