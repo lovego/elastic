@@ -7,23 +7,65 @@ import (
 )
 
 type BulkError interface {
-	FailedItems() [][2]interface{}
+	FailedItems(ignoreMapperParsingException bool) [][2]interface{}
 	Error() string
 }
 
 type bulkError struct {
-	typ         string
-	inputs      [][2]interface{}
+	typ    string
+	inputs [][2]interface{}
+	/* results example:
+		 * [
+		 *	   {
+		 *	       "index":  {
+		 *	           "_id": "9208c6f4941b46dd61d5cd2b34ea2267",
+		 *	           "_index": "logc-common-calls-erp-log.2020.02",
+		 *	           "_type": "_doc",
+		 *	           "error": {
+		 *	               "caused_by": {
+		 *	                   "reason": "cannot parse empty date",
+		 *	                   "type": "illegal_argument_exception"
+		 *	               },
+		 *	               "reason": "failed to parse field [data_o.BeginDate_s] of type [date] in document with id '9208c6f4941b46dd61d5cd2b34ea2267'",
+		 *	               "type": "mapper_parsing_exception"
+		 *	           },
+		 *	           "status": 400
+		 *	       }
+		 *	   },
+		 *	   {
+		 *	       "create":  {
+	     *             ...
+		 *	       }
+		 *	   },
+		 *	   {
+		 *	       "update":  {
+	     *             ...
+		 *	       }
+		 *	   },
+		 *	   {
+		 *	       "delete":  {
+	     *             ...
+		 *	       }
+		 *	   },
+		 *	   ...
+		 * ]
+	*/
 	results     []map[string]map[string]interface{}
 	failedItems [][2]interface{}
 }
 
-func (b bulkError) FailedItems() [][2]interface{} {
+func (b bulkError) FailedItems(ignoreMapperParsingException bool) [][2]interface{} {
 	if b.failedItems == nil {
 		failedItems := make([][2]interface{}, 0)
 		for i, result := range b.results {
 			res := result[b.typ]
-			if res[`error`] != nil {
+			if err := res[`error`]; err != nil {
+				if ignoreMapperParsingException {
+					if errMap, _ := err.(map[string]interface{}); errMap != nil &&
+						errMap["type"] == "mapper_parsing_exception" {
+						continue
+					}
+				}
 				failedItems = append(failedItems, b.inputs[i])
 			}
 		}

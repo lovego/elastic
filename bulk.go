@@ -2,6 +2,7 @@ package elastic
 
 import "net/url"
 
+// reference: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
 type BulkResult struct {
 	Errors bool                                `json:"errors"`
 	Items  []map[string]map[string]interface{} `json:"items"`
