@@ -7,7 +7,7 @@ import (
 )
 
 type BulkError interface {
-	FailedItems(ignoreMapperParsingException bool) [][2]interface{}
+	FailedItems(ignoreMapperParsingException, ignoreIllegalArgumentException bool) [][2]interface{}
 	Error() string
 }
 
@@ -50,28 +50,32 @@ type bulkError struct {
 		 *	   ...
 		 * ]
 	*/
-	results     []map[string]map[string]interface{}
-	failedItems [][2]interface{}
+	results []map[string]map[string]interface{}
 }
 
-func (b bulkError) FailedItems(ignoreMapperParsingException bool) [][2]interface{} {
-	if b.failedItems == nil {
-		failedItems := make([][2]interface{}, 0)
-		for i, result := range b.results {
-			res := result[b.typ]
-			if err := res[`error`]; err != nil {
-				if ignoreMapperParsingException {
-					if errMap, _ := err.(map[string]interface{}); errMap != nil &&
-						errMap["type"] == "mapper_parsing_exception" {
-						continue
-					}
+func (b bulkError) FailedItems(
+	ignoreMapperParsingException, ignoreIllegalArgumentException bool,
+) [][2]interface{} {
+	failedItems := make([][2]interface{}, 0)
+	for i, result := range b.results {
+		res := result[b.typ]
+		if err := res[`error`]; err != nil {
+			if ignoreMapperParsingException {
+				if errMap, _ := err.(map[string]interface{}); errMap != nil &&
+					errMap["type"] == "mapper_parsing_exception" {
+					continue
 				}
-				failedItems = append(failedItems, b.inputs[i])
 			}
+			if ignoreIllegalArgumentException {
+				if errMap, _ := err.(map[string]interface{}); errMap != nil &&
+					errMap["type"] == "illegal_argument_exception" {
+					continue
+				}
+			}
+			failedItems = append(failedItems, b.inputs[i])
 		}
-		b.failedItems = failedItems
 	}
-	return b.failedItems
+	return failedItems
 }
 
 func (b bulkError) Error() string {
@@ -97,23 +101,19 @@ type BulkDeleteError interface {
 }
 
 type bulkDeleteError struct {
-	inputs      []string
-	results     []map[string]map[string]interface{}
-	failedItems []string
+	inputs  []string
+	results []map[string]map[string]interface{}
 }
 
 func (b bulkDeleteError) FailedItems() []string {
-	if b.failedItems == nil {
-		failedItems := make([]string, 0)
-		for i, result := range b.results {
-			res := result[`delete`]
-			if res[`error`] != nil {
-				failedItems = append(failedItems, b.inputs[i])
-			}
+	failedItems := make([]string, 0)
+	for i, result := range b.results {
+		res := result[`delete`]
+		if res[`error`] != nil {
+			failedItems = append(failedItems, b.inputs[i])
 		}
-		b.failedItems = failedItems
 	}
-	return b.failedItems
+	return failedItems
 }
 
 func (b bulkDeleteError) Error() string {

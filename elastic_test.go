@@ -16,7 +16,7 @@ func testEsHost() string {
 }
 
 func createEmptyUsers() {
-	if err := testES.Delete(`/`, nil); err != nil {
+	if err := testES.Delete(`/`, nil); err != nil && !IsNotFound(err) {
 		log.Panic(err)
 	}
 
